@@ -42,7 +42,7 @@ func main() {
 		_, err = r.InstantiateModule(ctx, compiled, config.WithStdin(input))
 
 		if err != nil {
-			log.Panicln(err) // Panics on second iteration: module  has already been instantiated
+			log.Panicln(err) // Panics on second iteration: module  has already been instantiated. Move everything into the for loop to get it to work.
 		}
 	}
 }
