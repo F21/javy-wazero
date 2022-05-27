@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"time"
 
 	"github.com/tetratelabs/wazero"
 	"github.com/tetratelabs/wazero/wasi"
@@ -37,6 +38,7 @@ func main() {
 	}
 
 	for i := 0; i < 100; i++ {
+		start := time.Now()
 		input := bytes.NewBufferString(fmt.Sprintf(`{"name": "Person %d"}`, i))
 
 		module, err := r.InstantiateModule(ctx, compiled, config.WithName(fmt.Sprintf("module-%d", i)).WithStdin(input))
@@ -45,6 +47,7 @@ func main() {
 			log.Panicln(err)
 		}
 
-		defer module.Close(nil)
+		module.Close(nil)
+		fmt.Println("time taken", time.Since(start))
 	}
 }
