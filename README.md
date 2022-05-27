@@ -2,5 +2,4 @@
 
 To run: `go run main.go`
 
-To get it to work properly, all the code including the instantiation of the wazero runtime needs to be moved into the `for`
-loop. Meaning that we need to create a new runtime and compile the module everytime we want to call it.
+To get it to work properly, we need to instantiate the module each time its run with a different name, otherwise it will panic

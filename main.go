@@ -39,10 +39,12 @@ func main() {
 	for i := 0; i < 100; i++ {
 		input := bytes.NewBufferString(fmt.Sprintf(`{"name": "Person %d"}`, i))
 
-		_, err = r.InstantiateModule(ctx, compiled, config.WithStdin(input))
+		module, err := r.InstantiateModule(ctx, compiled, config.WithName(fmt.Sprintf("module-%d", i)).WithStdin(input))
 
 		if err != nil {
-			log.Panicln(err) // Panics on second iteration: module  has already been instantiated. Move everything into the for loop to get it to work.
+			log.Panicln(err)
 		}
+
+		defer module.Close(nil)
 	}
 }
