@@ -8,6 +8,7 @@ import (
 	"log"
 	"math"
 	"math/big"
+	"sync"
 	"time"
 
 	"github.com/tetratelabs/wazero"
@@ -17,8 +18,6 @@ import (
 
 //go:embed wasm/greet.wasm
 var greetWasm []byte
-
-var results map[int32]chan []byte
 
 func main() {
 	// Choose the context to use for function calls.
@@ -33,8 +32,10 @@ func main() {
 		log.Panicln(err)
 	}
 
+	results := &sync.Map{} // Stores channels that we can use to send back the result
+
 	// Register the host functions that Suborbital Javy needs
-	if err := registerHostFunctions(ctx, r); err != nil {
+	if err := registerHostFunctions(ctx, r, results); err != nil {
 		log.Panicln(err)
 	}
 
@@ -45,47 +46,12 @@ func main() {
 		log.Panicln(err)
 	}
 
-	results = map[int32]chan []byte{} // Stores channels that we can use to send back the result
-
 	for i := 0; i < 10; i++ {
 		start := time.Now()
 
 		input := fmt.Sprintf(`{"name": "Person %d"}`, i)
-		inputLength := len(input)
 
-		allocation, err := module.ExportedFunction("allocate").Call(ctx, uint64(inputLength)) // Allocate the memory
-
-		if err != nil {
-			log.Panicln(err)
-		}
-
-		inputPtr := allocation[0]
-
-		defer module.ExportedFunction("deallocate").Call(ctx, inputPtr) // Remember to deallocate the memory after using it, otherwise it will leak!
-
-		if !module.Memory().Write(ctx, uint32(inputPtr), []byte(input)) { // Write the input to memory
-			log.Panicln(err)
-		}
-
-		ident, err := randomIdentifier() // Generate a random id for this call (Suborbital Javy expects this to correlate the input's caller with the output)
-
-		if err != nil {
-			log.Panicln(err)
-		}
-
-		resultCh := make(chan []byte, 1) // Must have a buffer of 1, otherwise it will block since we're reading and writing from the same goroutine
-
-		results[ident] = resultCh
-
-		defer delete(results, ident)
-
-		_, err = module.ExportedFunction("run_e").Call(ctx, inputPtr, uint64(inputLength), uint64(ident)) // Call run_e with the location of the input and the identifier
-
-		if err != nil {
-			log.Panicln(err)
-		}
-
-		result := <-resultCh // Wait for the result
+		result := callFunc(ctx, module, input, results)
 
 		fmt.Printf("%s", result)
 
@@ -93,15 +59,62 @@ func main() {
 	}
 }
 
+func callFunc(ctx context.Context, module api.Module, input string, results *sync.Map) []byte {
+	inputLength := len(input)
+
+	allocation, err := module.ExportedFunction("allocate").Call(ctx, uint64(inputLength)) // Allocate the memory
+
+	if err != nil {
+		log.Panicln(err)
+	}
+
+	inputPtr := allocation[0]
+
+	defer module.ExportedFunction("deallocate").Call(ctx, inputPtr) // Remember to deallocate the memory after using it, otherwise it will leak!
+
+	if !module.Memory().Write(ctx, uint32(inputPtr), []byte(input)) { // Write the input to memory
+		log.Panicln(err)
+	}
+
+	ident, err := randomIdentifier() // Generate a random id for this call (Suborbital Javy expects this to correlate the input's caller with the output)
+
+	if err != nil {
+		log.Panicln(err)
+	}
+
+	resultCh := make(chan []byte, 1) // Must have a buffer of 1, otherwise it will block since we're reading and writing from the same goroutine
+
+	results.Store(ident, resultCh)
+
+	defer results.Delete(ident)
+
+	_, err = module.ExportedFunction("run_e").Call(ctx, inputPtr, uint64(inputLength), uint64(ident)) // Call run_e with the location of the input and the identifier
+
+	if err != nil {
+		log.Panicln(err)
+	}
+
+	result := <-resultCh // Wait for the result
+
+	return result
+}
+
 // The Suborbital version of Javy expects these host functions to be implemented, but we only need "return_result"
-func registerHostFunctions(ctx context.Context, r wazero.Runtime) error {
+func registerHostFunctions(ctx context.Context, r wazero.Runtime, results *sync.Map) error {
 	_, err := r.NewModuleBuilder("env"). // They must be registered under "env"
 						ExportFunction("return_result", func(ctx context.Context, m api.Module, ptr uint32, len uint32, ident uint32) {
-			if ch, ok := results[int32(ident)]; ok {
+			if ch, ok := results.Load(int32(ident)); ok {
+
+				resultCh, ok := ch.(chan []byte)
+
+				if !ok {
+					log.Panicln("Channel is not the right type")
+				}
+
 				result, ok := m.Memory().Read(ctx, ptr, len) // Read the result written by the WebAssembly module
 
 				if ok {
-					ch <- result // Send it
+					resultCh <- result // Send it
 				}
 			}
 		}).
