@@ -1,0 +1,29 @@
+version: '3'
+
+services:
+  compile-shopify-javy-wasm:
+    image: debian:bookworm-slim
+    environment:
+      JAVY_VERSION: 0.3.0
+    command: >
+      sh -c "apt update && apt install -y wget
+             wget -nv --show-progress -O /tmp/javy.gz https://github.com/Shopify/javy/releases/download/v$$JAVY_VERSION/javy-x86_64-linux-v$$JAVY_VERSION.gz;
+             gzip -d -c /tmp/javy.gz > /bin/javy;
+             chmod +x /bin/javy;
+             /bin/javy shopify-javy/js/greet.js -o shopify-javy/wasm/greet.wasm
+             echo \"==> WebAssembly module compiled!\""
+    working_dir: /source
+    volumes:
+      - .:/source
+
+  compile-suborbital-javy-wasm:
+    image: suborbital/builder-js:v0.5.1
+    command: >
+      sh -c "npm config set update-notifier false;
+             npm install;
+             npx --no-update-notifier webpack;
+             javy -o /source/suborbital-javy/wasm/greet.wasm /tmp/greet.js;
+             echo \"==> WebAssembly module compiled!\""
+    working_dir: /source/suborbital-javy/js
+    volumes:
+      - .:/source

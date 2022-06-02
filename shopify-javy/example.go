@@ -10,10 +10,10 @@ import (
 	"time"
 
 	"github.com/tetratelabs/wazero"
-	"github.com/tetratelabs/wazero/wasi"
+	"github.com/tetratelabs/wazero/wasi_snapshot_preview1"
 )
 
-//go:embed js/greet.wasm
+//go:embed wasm/greet.wasm
 var greetWasm []byte
 
 func main() {
@@ -25,7 +25,7 @@ func main() {
 	defer r.Close(ctx) // This closes everything this Runtime created.
 
 	// Instantiate WASI, which implements system I/O such as console output.
-	if _, err := wasi.InstantiateSnapshotPreview1(ctx, r); err != nil {
+	if _, err := wasi_snapshot_preview1.Instantiate(ctx, r); err != nil {
 		log.Panicln(err)
 	}
 
@@ -35,15 +35,17 @@ func main() {
 		log.Panicln(err)
 	}
 
+	// Set stdout
 	config := wazero.NewModuleConfig().WithStdout(os.Stdout)
-	for i := 0; i < 100; i++ {
+
+	for i := 0; i < 10; i++ {
 		start := time.Now()
 
-		// The only way to pass data to Javy is via Stdin, arguments or env variables.
+		// The only way to pass data to Javy is via Stdin, arguments or env variables as JSON.
 		input := strings.NewReader(fmt.Sprintf(`{"name": "Person %d"}`, i))
-		startModule(ctx, r, compiled, config.WithStdin(input))
+		startModule(ctx, r, compiled, config.WithStdin(input)) // Set stdin
 
-		fmt.Println("time taken", time.Since(start))
+		fmt.Println(" Time taken:", time.Since(start))
 	}
 }
 

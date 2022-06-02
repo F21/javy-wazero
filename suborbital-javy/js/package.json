@@ -1,0 +1,14 @@
+{
+  "name": "suborbital-javy",
+  "version": "0.1.0",
+  "private": true,
+  "license": "Apache-2.0",
+  "devDependencies": {
+    "webpack": "^5.72.1",
+    "webpack-cli": "^4.9.2"
+  },
+  "dependencies": {
+    "@suborbital/runnable": "^0.15.1",
+    "fastestsmallesttextencoderdecoder-encodeinto": "^1.0.22"
+  }
+}
