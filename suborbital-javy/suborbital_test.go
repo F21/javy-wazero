@@ -33,17 +33,16 @@ func BenchmarkSuborbitalCallFunction(b *testing.B) {
 
 	// Compile and instantiate the module
 	module, err := r.InstantiateModuleFromBinary(ctx, greetWasm)
-
 	if err != nil {
 		log.Panicln(err)
 	}
 
-	for i := 0; i < 10; i++ {
+	input := fmt.Sprintf(`{"name": "Person"}`)
 
-		input := fmt.Sprintf(`{"name": "Person %d"}`, i)
-
-		b.Run(fmt.Sprintf("input-%d", i), func(b *testing.B) {
-			_ = callFunc(ctx, module, input, results)
-		})
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		if _, err = callFunc(ctx, module, input, results); err != nil {
+			b.Fatal(err)
+		}
 	}
 }

@@ -2,10 +2,7 @@ package main
 
 import (
 	"context"
-	"crypto/rand"
 	"fmt"
-	"math"
-	"math/big"
 	"strconv"
 	"strings"
 	"testing"
@@ -32,35 +29,15 @@ func BenchmarkShopifyInstantiateModule(b *testing.B) {
 		b.Fatal(err)
 	}
 
-	for i := 0; i < 10; i++ {
+	inputJSON := fmt.Sprintf(`{"name": "Person"}`)
 
-		inputJSON := fmt.Sprintf(`{"name": "Person %d"}`, i)
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		input := strings.NewReader(inputJSON)
 
-		b.Run(fmt.Sprintf("input-%d", i), func(b *testing.B) {
-
-			for j := 0; j < b.N; j++ {
-				id, err := randomIdentifier()
-
-				if err != nil {
-					b.Fatal(err)
-				}
-
-				input := strings.NewReader(inputJSON)
-
-				config := wazero.NewModuleConfig().WithName(strconv.Itoa(int(id))).WithStdin(input)
-
-				startModule(ctx, r, compiled, config)
-			}
-		})
+		config := wazero.NewModuleConfig().WithName(strconv.Itoa(i)).WithStdin(input)
+		if err := startModule(ctx, r, compiled, config); err != nil {
+			b.Fatal(err)
+		}
 	}
-}
-
-func randomIdentifier() (int32, error) {
-	// generate a random number between 0 and the largest possible int32
-	num, err := rand.Int(rand.Reader, big.NewInt(math.MaxInt32))
-	if err != nil {
-		return -1, fmt.Errorf("failed to generate random int: %w", err)
-	}
-
-	return int32(num.Int64()), nil
 }
