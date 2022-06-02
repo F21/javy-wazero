@@ -6,7 +6,7 @@ There are currently 2 flavors of Javy:
 
 This repository provides an example written for both versions
 - [Shopify Javy](shopify-javy)
-- [Suborvital Javy](suborbital-javy)
+- [Suborbital Javy](suborbital-javy)
 
 ## Why Javy?
 On the surface, it might seem quite strange to have a compiler that compiles JavaScript to WebAssembly, given that we
