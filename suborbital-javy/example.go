@@ -41,7 +41,6 @@ func main() {
 
 	// Compile and instantiate the module
 	module, err := r.InstantiateModuleFromBinary(ctx, greetWasm)
-
 	if err != nil {
 		log.Panicln(err)
 	}
@@ -51,7 +50,10 @@ func main() {
 
 		input := fmt.Sprintf(`{"name": "Person %d"}`, i)
 
-		result := callFunc(ctx, module, input, results)
+		result, err := callFunc(ctx, module, input, results)
+		if err != nil {
+			log.Panicln(err)
+		}
 
 		fmt.Printf("%s", result)
 
@@ -59,13 +61,12 @@ func main() {
 	}
 }
 
-func callFunc(ctx context.Context, module api.Module, input string, results *sync.Map) []byte {
+func callFunc(ctx context.Context, module api.Module, input string, results *sync.Map) ([]byte, error) {
 	inputLength := len(input)
 
 	allocation, err := module.ExportedFunction("allocate").Call(ctx, uint64(inputLength)) // Allocate the memory
-
 	if err != nil {
-		log.Panicln(err)
+		return nil, err
 	}
 
 	inputPtr := allocation[0]
@@ -73,13 +74,12 @@ func callFunc(ctx context.Context, module api.Module, input string, results *syn
 	defer module.ExportedFunction("deallocate").Call(ctx, inputPtr) // Remember to deallocate the memory after using it, otherwise it will leak!
 
 	if !module.Memory().Write(ctx, uint32(inputPtr), []byte(input)) { // Write the input to memory
-		log.Panicln(err)
+		return nil, err
 	}
 
 	ident, err := randomIdentifier() // Generate a random id for this call (Suborbital Javy expects this to correlate the input's caller with the output)
-
 	if err != nil {
-		log.Panicln(err)
+		return nil, err
 	}
 
 	resultCh := make(chan []byte, 1) // Must have a buffer of 1, otherwise it will block since we're reading and writing from the same goroutine
@@ -91,12 +91,12 @@ func callFunc(ctx context.Context, module api.Module, input string, results *syn
 	_, err = module.ExportedFunction("run_e").Call(ctx, inputPtr, uint64(inputLength), uint64(ident)) // Call run_e with the location of the input and the identifier
 
 	if err != nil {
-		log.Panicln(err)
+		return nil, err
 	}
 
 	result := <-resultCh // Wait for the result
 
-	return result
+	return result, nil
 }
 
 // The Suborbital version of Javy expects these host functions to be implemented, but we only need "return_result"
