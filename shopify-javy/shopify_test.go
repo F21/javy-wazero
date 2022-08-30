@@ -15,7 +15,7 @@ func BenchmarkShopifyInstantiateModule(b *testing.B) {
 	ctx := context.Background()
 
 	// Create a new WebAssembly Runtime.
-	r := wazero.NewRuntime()
+	r := wazero.NewRuntime(ctx)
 	defer r.Close(ctx) // This closes everything this Runtime created.
 
 	// Instantiate WASI, which implements system I/O such as console output.
