@@ -30,7 +30,7 @@ func main() {
 	}
 
 	// Compile the module to reduce performance impact of instantiating it multiple times.
-	compiled, err := r.CompileModule(ctx, greetWasm, wazero.NewCompileConfig())
+	compiled, err := r.CompileModule(ctx, greetWasm)
 	if err != nil {
 		log.Panicln(err)
 	}
