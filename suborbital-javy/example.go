@@ -101,8 +101,9 @@ func callFunc(ctx context.Context, module api.Module, input string, results *syn
 
 // The Suborbital version of Javy expects these host functions to be implemented, but we only need "return_result"
 func registerHostFunctions(ctx context.Context, r wazero.Runtime, results *sync.Map) error {
-	_, err := r.NewModuleBuilder("env"). // They must be registered under "env"
-						ExportFunction("return_result", func(ctx context.Context, m api.Module, ptr uint32, len uint32, ident uint32) {
+	_, err := r.NewHostModuleBuilder("env"). // They must be registered under "env"
+							NewFunctionBuilder().
+							WithFunc(func(ctx context.Context, m api.Module, ptr uint32, len uint32, ident uint32) {
 			if ch, ok := results.Load(int32(ident)); ok {
 
 				resultCh, ok := ch.(chan []byte)
@@ -118,42 +119,68 @@ func registerHostFunctions(ctx context.Context, r wazero.Runtime, results *sync.
 				}
 			}
 		}).
-		ExportFunction("get_static_file", func(_ uint32, _ uint32, _ uint32) uint32 {
+		Export("return_result").
+		NewFunctionBuilder().
+		WithFunc(func(_ uint32, _ uint32, _ uint32) uint32 {
 			panic("get_static_file is unimplemented")
 		}).
-		ExportFunction("request_set_field", func(_ uint32, _ uint32, _ uint32, _ uint32, _ uint32, _ uint32) uint32 {
+		Export("get_static_file").
+		NewFunctionBuilder().
+		WithFunc(func(_ uint32, _ uint32, _ uint32, _ uint32, _ uint32, _ uint32) uint32 {
 			panic("request_set_field is unimplemented")
 		}).
-		ExportFunction("cache_get", func(_ uint32, _ uint32, _ uint32) uint32 {
+		Export("request_set_field").
+		NewFunctionBuilder().
+		WithFunc(func(_ uint32, _ uint32, _ uint32) uint32 {
 			panic("cache_get is unimplemented")
 		}).
-		ExportFunction("add_ffi_var", func(_ uint32, _ uint32, _ uint32, _ uint32, _ uint32) uint32 {
+		Export("cache_get").
+		NewFunctionBuilder().
+		WithFunc(func(_ uint32, _ uint32, _ uint32, _ uint32, _ uint32) uint32 {
 			panic("add_ffi_var is unimplemented")
 		}).
-		ExportFunction("get_ffi_result", func(_ uint32, _ uint32) uint32 {
+		Export("add_ffi_var").
+		NewFunctionBuilder().
+		WithFunc(func(_ uint32, _ uint32) uint32 {
 			panic("get_ffi_result is unimplemented")
 		}).
-		ExportFunction("return_error", func(_ uint32, _ uint32, _ uint32, _ uint32) {
+		Export("get_ffi_result").
+		NewFunctionBuilder().
+		WithFunc(func(_ uint32, _ uint32, _ uint32, _ uint32) {
 			panic("return_error is unimplemented")
 		}).
-		ExportFunction("fetch_url", func(_ uint32, _ uint32, _ uint32, _ uint32, _ uint32, _ uint32) uint32 {
+		Export("return_error").
+		NewFunctionBuilder().
+		WithFunc(func(_ uint32, _ uint32, _ uint32, _ uint32, _ uint32, _ uint32) uint32 {
 			panic("fetch_url is unimplemented")
 		}).
-		ExportFunction("graphql_query", func(_ uint32, _ uint32, _ uint32, _ uint32, _ uint32) uint32 {
+		Export("fetch_url").
+		NewFunctionBuilder().
+		WithFunc(func(_ uint32, _ uint32, _ uint32, _ uint32, _ uint32) uint32 {
 			panic("graphql_query is unimplemented")
 		}).
-		ExportFunction("db_exec", func(_ uint32, _ uint32, _ uint32, _ uint32) uint32 {
+		Export("graphql_query").
+		NewFunctionBuilder().
+		WithFunc(func(_ uint32, _ uint32, _ uint32, _ uint32) uint32 {
 			panic("db_exec is unimplemented")
 		}).
-		ExportFunction("cache_set", func(_ uint32, _ uint32, _ uint32, _ uint32, _ uint32, _ uint32) uint32 {
+		Export("db_exec").
+		NewFunctionBuilder().
+		WithFunc(func(_ uint32, _ uint32, _ uint32, _ uint32, _ uint32, _ uint32) uint32 {
 			panic("cache_set is unimplemented")
 		}).
-		ExportFunction("request_get_field", func(_ uint32, _ uint32, _ uint32, _ uint32) uint32 {
+		Export("cache_set").
+		NewFunctionBuilder().
+		WithFunc(func(_ uint32, _ uint32, _ uint32, _ uint32) uint32 {
 			panic("request_get_field is unimplemented")
 		}).
-		ExportFunction("log_msg", func(ctx context.Context, m api.Module, ptr uint32, size uint32, level uint32, ident uint32) {
+		Export("request_get_field").
+		NewFunctionBuilder().
+		WithFunc(func(ctx context.Context, m api.Module, ptr uint32, size uint32, level uint32, ident uint32) {
 			panic("log_msg is unimplemented")
-		}).Instantiate(ctx, r)
+		}).
+		Export("log_msg").
+		Instantiate(ctx, r)
 
 	return err
 }
