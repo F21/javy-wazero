@@ -40,7 +40,7 @@ func main() {
 	}
 
 	// Compile and instantiate the module
-	module, err := r.InstantiateModuleFromBinary(ctx, greetWasm)
+	module, err := r.Instantiate(ctx, greetWasm)
 	if err != nil {
 		log.Panicln(err)
 	}
@@ -73,7 +73,7 @@ func callFunc(ctx context.Context, module api.Module, input string, results *syn
 
 	defer module.ExportedFunction("deallocate").Call(ctx, inputPtr) // Remember to deallocate the memory after using it, otherwise it will leak!
 
-	if !module.Memory().Write(ctx, uint32(inputPtr), []byte(input)) { // Write the input to memory
+	if !module.Memory().Write(uint32(inputPtr), []byte(input)) { // Write the input to memory
 		return nil, err
 	}
 
@@ -112,7 +112,7 @@ func registerHostFunctions(ctx context.Context, r wazero.Runtime, results *sync.
 					log.Panicln("Channel is not the right type")
 				}
 
-				result, ok := m.Memory().Read(ctx, ptr, len) // Read the result written by the WebAssembly module
+				result, ok := m.Memory().Read(ptr, len) // Read the result written by the WebAssembly module
 
 				if ok {
 					resultCh <- result // Send it
@@ -180,7 +180,7 @@ func registerHostFunctions(ctx context.Context, r wazero.Runtime, results *sync.
 			panic("log_msg is unimplemented")
 		}).
 		Export("log_msg").
-		Instantiate(ctx, r)
+		Instantiate(ctx)
 
 	return err
 }

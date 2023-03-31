@@ -32,7 +32,7 @@ func BenchmarkSuborbitalCallFunction(b *testing.B) {
 	}
 
 	// Compile and instantiate the module
-	module, err := r.InstantiateModuleFromBinary(ctx, greetWasm)
+	module, err := r.Instantiate(ctx, greetWasm)
 	if err != nil {
 		log.Panicln(err)
 	}
