@@ -29,17 +29,15 @@ To run the benchmarks, run `go test -bench=. ./...` from the root of the reposit
 Here are the results on my machine:
 ```
 goos: darwin
-goarch: amd64
+goarch: arm64
 pkg: github.com/F21/javy-wazero/shopify-javy
-cpu: Intel(R) Core(TM) i9-9880H CPU @ 2.30GHz
-BenchmarkShopifyInstantiateModule-16    	     597	   2099444 ns/op
+BenchmarkShopifyInstantiateModule-12    	    3548	    333316 ns/op
 PASS
-ok  	github.com/F21/javy-wazero/shopify-javy	4.342s
+ok  	github.com/F21/javy-wazero/shopify-javy	2.438s
 goos: darwin
-goarch: amd64
+goarch: arm64
 pkg: github.com/F21/javy-wazero/suborbital-javy
-cpu: Intel(R) Core(TM) i9-9880H CPU @ 2.30GHz
-BenchmarkSuborbitalCallFunction-16    	   13616	     85742 ns/op
+BenchmarkSuborbitalCallFunction-12    	   26733	     44817 ns/op
 PASS
-ok  	github.com/F21/javy-wazero/suborbital-javy	5.490s
+ok  	github.com/F21/javy-wazero/suborbital-javy	2.835s
 ```
